@@ -41,9 +41,9 @@ int main(int argc, char *argv[]) {
                     m_chunk[elim_row * N + col] -= m_chunk[local_row * N + col] * scale;
                 }
             }
-            /*for (int i = mapped_rank + 1; i < size; i++) {
+            for (int i = mapped_rank + 1; i < size; i++) {
                 MPI_Wait(&requests[i], MPI_STATUS_IGNORE);
-            }*/
+            }
         } else {
             MPI_Recv(pivot_row, N, MPI_DOUBLE, mapped_rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             for (int elim_row = 0; elim_row < n_rows; elim_row++) {
