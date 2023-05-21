@@ -21,16 +21,13 @@ int main(int argc, char *argv[]) {
         fill_matrix(mtr, N);
         printf_matrix(mtr, N);
     }
-    MPI_Scatter(mtr, N * n_rows, MPI_FLOAT, m_chunk, N * n_rows, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(mtr, N * n_rows, MPI_DOUBLE, m_chunk, N * n_rows, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Request requests[size];
     for (int row = 0; row < finish_row; row++) {
         int mapped_rank = row / n_rows;
         if (rank == mapped_rank) {
             int local_row = row % n_rows;
             double pivot = m_chunk[local_row * N + row];
-            for (int col = row; col < N; col++) {
-                m_chunk[local_row * N + col] /= pivot;           //creating 1 in main diagonal in each chunk
-            }
             for (int i = mapped_rank + 1; i < size; i++) {
                 MPI_Isend(m_chunk + N * local_row, N, MPI_DOUBLE, i, 0, MPI_COMM_WORLD,
                           &requests[i]);  //sending current row
@@ -38,7 +35,7 @@ int main(int argc, char *argv[]) {
             for (int elim_row = local_row + 1; elim_row < n_rows; elim_row++) {
                 double scale = m_chunk[elim_row * N + row];
                 for (int col = row; col < N; col++) {
-                    m_chunk[elim_row * N + col] -= m_chunk[local_row * N + col] * scale;
+                    m_chunk[elim_row * N + col] -= ((m_chunk[local_row * N + col] * scale) / pivot);
                 }
             }
             for (int i = mapped_rank + 1; i < size; i++) {
@@ -49,7 +46,7 @@ int main(int argc, char *argv[]) {
             for (int elim_row = 0; elim_row < n_rows; elim_row++) {
                 double scale = m_chunk[elim_row * N + row];
                 for (int col = row; col < N; col++) {
-                    m_chunk[elim_row * N + col] -= pivot_row[col] * scale;
+                    m_chunk[elim_row * N + col] -= pivot_row[col] * scale / pivot_row[row];
                 }
             }
         }
